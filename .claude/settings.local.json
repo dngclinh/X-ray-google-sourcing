@@ -4,7 +4,9 @@
       "Bash(mkdir -p \"D:/linhduong/Ralf/BIGBANG/src/xray\" \"D:/linhduong/Ralf/BIGBANG/tests\" \"D:/linhduong/Ralf/BIGBANG/knowledge/job_families\" \"D:/linhduong/Ralf/BIGBANG/.claude/skills\" && echo OK)",
       "Bash(python -m venv .venv)",
       "Bash(./.venv/Scripts/python.exe -m pip install -q -r requirements.txt)",
-      "Bash(./.venv/Scripts/python.exe -m pytest -q)"
+      "Bash(./.venv/Scripts/python.exe -m pytest -q)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
