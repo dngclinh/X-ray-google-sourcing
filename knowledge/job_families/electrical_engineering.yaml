@@ -1,0 +1,296 @@
+# Electrical Engineering job-family pack (CLAUDE.md section 4, category 2:
+# dictionary-driven, profession-specific knowledge). Schema per
+# src/xray/knowledge_loader.py; field meanings documented in
+# knowledge/job_families/_schema_example.yaml.
+#
+# Local-market focus: English + German (DACH region). Every German term
+# below is a real, known market equivalent (job title, technical term, or
+# abbreviation) — none are invented translations, per CLAUDE.md section 7
+# ("the engine does not translate or infer local-language terms on the
+# fly" applies equally to how this pack is authored).
+#
+# Technical evidence (skill_groups) is deliberately grouped by
+# specialization domain rather than dumped into one generic "electrical
+# skills" bucket, and is gated the same way every other pack is: a term
+# only ever enters a SearchSpec when it is literally present in the JD
+# (src/xray/extractor.py) — this pack does not, and cannot, force every
+# technical group to activate just because the family is "Electrical
+# Engineering".
+
+family: "Electrical Engineering"
+
+family_signals:
+  - "electrical engineering"
+  - "electrical engineer"
+  - "elektrotechnik"
+  - "elektroingenieur"
+  - "elektroingenieurin"
+
+# Title groups: "engineer" is the base role_type; every other group is a
+# seniority tier. Per CLAUDE.md section 6, seniority is a title modifier,
+# not folded into the base role_type group.
+titles:
+  - id: "engineer"
+    group_type: "role_type"
+    terms:
+      - "Electrical Engineer"
+      - "Elektroingenieur"
+      - "Elektroingenieurin"
+
+  - id: "senior"
+    group_type: "seniority"
+    terms:
+      - "Senior Electrical Engineer"
+      - "Senior Elektroingenieur"
+      - "Senior Elektroingenieurin"
+    weight: 0.65
+
+  - id: "lead"
+    group_type: "seniority"
+    terms:
+      - "Lead Electrical Engineer"
+      - "Electrical Engineering Lead"
+      - "Leitender Elektroingenieur"
+    weight: 0.7
+
+  - id: "principal"
+    group_type: "seniority"
+    terms:
+      - "Principal Electrical Engineer"
+      - "Principal Elektroingenieur"
+    weight: 0.8
+
+  - id: "design_lead"
+    group_type: "seniority"
+    terms:
+      - "Electrical Design Lead"
+      - "Design Lead Electrical Engineering"
+    weight: 0.72
+
+specializations:
+  - id: "data_center_mission_critical"
+    name: "Data Center / Mission Critical"
+    terms:
+      - "Data Center Electrical Engineer"
+      - "Critical Facilities Electrical Engineer"
+      - "Mission Critical Electrical Engineer"
+    weight: 0.6
+
+  - id: "building_services_mep"
+    name: "Building Services / MEP"
+    terms:
+      - "Building Services Electrical Engineer"
+      - "MEP Electrical Engineer"
+    weight: 0.55
+
+  - id: "industrial_power"
+    name: "Industrial Power"
+    terms:
+      - "Industrial Power Engineer"
+      - "Industrial Electrical Engineer"
+    weight: 0.55
+
+# specialization_signals: JD trigger phrases (English + German) that
+# activate the matching specialization. Only the data-center list is
+# drawn from the explicitly approved relationship set; the other two
+# specializations use equally well-established, standard industry/market
+# terms (e.g. German "TGA" for building services, "Industrieanlagen" for
+# industrial facilities) rather than invented synonyms.
+specialization_signals:
+  data_center_mission_critical:
+    - "data center"
+    - "data centre"
+    - "data centers"
+    - "data centres"
+    - "Datacenter"
+    - "Datacenters"
+    - "Rechenzentrum"
+    - "Rechenzentren"
+    - "mission critical"
+    - "mission-critical"
+    - "critical facilities"
+    - "critical facility"
+  building_services_mep:
+    - "building services"
+    - "MEP"
+    - "mechanical, electrical and plumbing"
+    - "mechanical electrical and plumbing"
+    - "TGA"
+    - "Gebäudetechnik"
+  industrial_power:
+    - "industrial power"
+    - "heavy industry"
+    - "process industry"
+    - "Industrieanlagen"
+    - "Industrieelektrik"
+
+# industries: domain/vertical evidence that feeds the Core Function/
+# Industry evidence clause (CLAUDE.md section 6) — mirrors the three
+# specializations above, since each specialization is also an industry
+# vertical within Electrical Engineering.
+industries:
+  - id: "data_center_industry"
+    name: "Data Center / Mission Critical"
+    terms:
+      - "data center"
+      - "data centre"
+      - "data centers"
+      - "data centres"
+      - "Datacenter"
+      - "Datacenters"
+      - "Rechenzentrum"
+      - "Rechenzentren"
+      - "mission critical"
+      - "mission-critical"
+      - "critical facilities"
+      - "critical facility"
+    weight: 0.3
+
+  - id: "building_services_industry"
+    name: "Building Services / MEP"
+    terms:
+      - "building services"
+      - "MEP"
+      - "mechanical, electrical and plumbing"
+      - "mechanical electrical and plumbing"
+      - "TGA"
+      - "Gebäudetechnik"
+    weight: 0.3
+
+  - id: "industrial_power_industry"
+    name: "Industrial Power"
+    terms:
+      - "industrial power"
+      - "heavy industry"
+      - "process industry"
+      - "Industrieanlagen"
+      - "Industrieelektrik"
+    weight: 0.3
+
+# skill_groups: grouped technical evidence. Each group is scoped to the
+# specialization it justifies (CLAUDE.md instruction: technical groups
+# require relevant JD evidence or specialization activation — enforced
+# structurally, since a term only ever enters a SearchSpec when it is
+# literally present in the JD text).
+skill_groups:
+  # --- Data Center / Mission Critical technical evidence ---
+  - id: "hv_mv_distribution"
+    name: "HV/MV Power Distribution"
+    terms:
+      - "HV"
+      - "high voltage"
+      - "Hochspannung"
+      - "MV"
+      - "medium voltage"
+      - "Mittelspannung"
+    weight: 0.4
+
+  - id: "switchgear_substations"
+    name: "Switchgear & Substations"
+    terms:
+      - "switchgear"
+      - "Schaltanlagen"
+      - "Schaltanlage"
+      - "substation"
+      - "substations"
+      - "Umspannwerk"
+      - "Umspannwerke"
+    weight: 0.4
+
+  - id: "transformers"
+    name: "Transformers"
+    terms:
+      - "transformer"
+      - "transformers"
+      - "Transformator"
+      - "Transformatoren"
+    weight: 0.35
+
+  - id: "backup_emergency_power"
+    name: "UPS & Emergency Power"
+    terms:
+      - "UPS"
+      - "emergency power"
+      - "Notstromversorgung"
+      - "Notstrom"
+    weight: 0.4
+
+  # --- Building Services / MEP technical evidence ---
+  - id: "building_electrical_systems"
+    name: "Building Electrical Systems"
+    terms:
+      - "low voltage distribution"
+      - "Niederspannung"
+      - "lighting design"
+      - "Beleuchtungsplanung"
+      - "fire alarm systems"
+      - "Brandmeldeanlage"
+    weight: 0.3
+
+  - id: "building_management_systems"
+    name: "Building Management Systems"
+    terms:
+      - "building management system"
+      - "BMS"
+      - "Gebäudeleittechnik"
+      - "GLT"
+    weight: 0.3
+
+  # --- Industrial Power technical evidence ---
+  - id: "industrial_power_distribution"
+    name: "Industrial Power Distribution"
+    terms:
+      - "power distribution"
+      - "Stromverteilung"
+      - "motor control center"
+      - "motor control centers"
+      - "MCC"
+    weight: 0.3
+
+  - id: "variable_frequency_drives"
+    name: "Variable Frequency Drives"
+    terms:
+      - "variable frequency drive"
+      - "variable frequency drives"
+      - "VFD"
+      - "Frequenzumrichter"
+    weight: 0.3
+
+# hidden_title_signals: adjacent/feeder titles for the Hidden Titles
+# variant (CLAUDE.md section 7 known limitation: not yet consumed by
+# extraction/assembly — schema-only until that mechanism exists).
+hidden_title_signals:
+  - "Electrical Design Engineer"
+  - "Power Systems Engineer"
+  - "Building Services Engineer"
+  - "MEP Engineer"
+  - "Electrical Project Engineer"
+  - "Projektleiter Elektrotechnik"
+  - "Elektroplaner"
+  - "Fachplaner Elektrotechnik"
+
+# exclusions: profession-specific disqualifying terms — Electrical
+# Engineering is a distinct, degree-level discipline from the
+# vocational/trade roles below (CLAUDE.md section 7: not consumed by
+# query assembly yet, same schema-only status as hidden_title_signals).
+exclusions:
+  - "Electrician"
+  - "Elektriker"
+  - "Electrical Technician"
+  - "Elektrotechniker"
+
+# local_market_terms: German title variants for this family, for
+# traceability/documentation (schema-only — see hidden_title_signals
+# note above). The functionally-matched subset is also present in
+# `titles` above, since only `titles`/`industries`/`skill_groups` are
+# actually consulted by extraction today.
+local_market_terms:
+  de:
+    - "Elektroingenieur"
+    - "Elektroingenieurin"
+    - "Senior Elektroingenieur"
+    - "Leitender Elektroingenieur"
+    - "Principal Elektroingenieur"
+    - "Projektleiter Elektrotechnik"
+    - "Elektroplaner"
+    - "Fachplaner Elektrotechnik"
