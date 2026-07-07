@@ -1,0 +1,72 @@
+# Generic company-type knowledge: canonical company-type categories and
+# their common aliases/synonyms.
+#
+# This file is generic organizational knowledge, not profession-specific
+# knowledge (CLAUDE.md section 4/5): it must not be edited to encode
+# job-family, title, or skill information. Per the jd-to-xray rules,
+# company-type qualifiers are typically NICE-TO-HAVE signal, not a MUST
+# filter, unless the JD states otherwise.
+#
+# `src/xray/glossary.py` requires this file to define at least these ten
+# canonical entries: consultancy, contractor, client-side, startup,
+# enterprise, agency, manufacturer, EPC, general contractor, design
+# office.
+company_types:
+  - canonical: Consultancy
+    aliases:
+      - Consultancy
+      - Consulting
+      - Consulting firm
+
+  - canonical: Contractor
+    aliases:
+      - Contractor
+      - Contracting
+
+  - canonical: Client-side
+    aliases:
+      - Client-side
+      - Client side
+      - In-house
+      - End client
+
+  - canonical: Startup
+    aliases:
+      - Startup
+      - Start-up
+
+  - canonical: Enterprise
+    aliases:
+      - Enterprise
+      - Large enterprise
+      - Corporate
+
+  - canonical: Agency
+    aliases:
+      - Agency
+      - Staffing agency
+      - Recruitment agency
+
+  - canonical: Manufacturer
+    aliases:
+      - Manufacturer
+      - Manufacturing company
+      - OEM
+
+  - canonical: EPC
+    aliases:
+      - EPC
+      - Engineering, Procurement and Construction
+      - Engineering Procurement and Construction
+
+  - canonical: General Contractor
+    aliases:
+      - General Contractor
+      - GC
+      - Main Contractor
+
+  - canonical: Design Office
+    aliases:
+      - Design Office
+      - Design Bureau
+      - Engineering Office

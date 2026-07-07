@@ -1,0 +1,62 @@
+# Generic language knowledge: canonical language names, their
+# English/local name variants, and common "-speaking" forms (e.g.
+# "German-speaking").
+#
+# This file is generic linguistic knowledge, not profession-specific
+# knowledge (CLAUDE.md section 4/5): it must not be edited to encode
+# job-family, title, or skill information. Per the jd-to-xray rules, a
+# language requirement is only ever added to a query when the JD states
+# it explicitly — never inferred from a location alone.
+languages:
+  - canonical: German
+    names:
+      - German
+      - Deutsch
+    speaking_forms:
+      - German-speaking
+      - Deutschsprachig
+      - Deutsch-speaking
+
+  - canonical: English
+    names:
+      - English
+    speaking_forms:
+      - English-speaking
+
+  - canonical: French
+    names:
+      - French
+      - Français
+      - Francais
+    speaking_forms:
+      - French-speaking
+      - Francophone
+
+  - canonical: Polish
+    names:
+      - Polish
+      - Polski
+    speaking_forms:
+      - Polish-speaking
+
+  - canonical: Spanish
+    names:
+      - Spanish
+      - Español
+    speaking_forms:
+      - Spanish-speaking
+      - Hispanophone
+
+  - canonical: Italian
+    names:
+      - Italian
+      - Italiano
+    speaking_forms:
+      - Italian-speaking
+
+  - canonical: Dutch
+    names:
+      - Dutch
+      - Nederlands
+    speaking_forms:
+      - Dutch-speaking

@@ -1,0 +1,144 @@
+# Generic location knowledge: canonical countries, their English/local
+# name variants, selected city aliases, and — only when verified — the
+# LinkedIn country ccTLD used for `site:<cc>.linkedin.com/in` searches.
+#
+# This file is generic geographic knowledge, not profession-specific
+# knowledge (CLAUDE.md section 4/5): it must not be edited to encode
+# job-family, title, or skill information.
+#
+# Per CLAUDE.md section 5, a ccTLD narrows results by LinkedIn
+# domain/locale but never replaces the location block — explicit
+# location terms must always be kept alongside it. Omit `cctld` for any
+# country where the LinkedIn localized domain hasn't been verified.
+countries:
+  - canonical: Germany
+    names:
+      - Germany
+      - Deutschland
+    cctld: de
+    cities:
+      - canonical: Munich
+        aliases:
+          - Munich
+          - München
+      - canonical: Cologne
+        aliases:
+          - Cologne
+          - Köln
+      - canonical: Berlin
+        aliases:
+          - Berlin
+      - canonical: Frankfurt
+        aliases:
+          - Frankfurt
+          - Frankfurt am Main
+      - canonical: Nuremberg
+        aliases:
+          - Nuremberg
+          - Nürnberg
+
+  - canonical: Austria
+    names:
+      - Austria
+      - Österreich
+    cctld: at
+    cities:
+      - canonical: Vienna
+        aliases:
+          - Vienna
+          - Wien
+
+  - canonical: Switzerland
+    names:
+      - Switzerland
+      - Schweiz
+      - Suisse
+      - Svizzera
+    cctld: ch
+    cities:
+      - canonical: Zurich
+        aliases:
+          - Zurich
+          - Zürich
+      - canonical: Geneva
+        aliases:
+          - Geneva
+          - Genève
+
+  - canonical: Poland
+    names:
+      - Poland
+      - Polska
+    cctld: pl
+    cities:
+      - canonical: Warsaw
+        aliases:
+          - Warsaw
+          - Warszawa
+      - canonical: Krakow
+        aliases:
+          - Krakow
+          - Kraków
+          - Cracow
+
+  - canonical: United Kingdom
+    names:
+      - United Kingdom
+      - UK
+      - Great Britain
+    cctld: uk
+    cities:
+      - canonical: London
+        aliases:
+          - London
+
+  - canonical: France
+    names:
+      - France
+    cctld: fr
+    cities:
+      - canonical: Paris
+        aliases:
+          - Paris
+
+  - canonical: Netherlands
+    names:
+      - Netherlands
+      - The Netherlands
+      - Nederland
+      - Holland
+    cctld: nl
+    cities:
+      - canonical: The Hague
+        aliases:
+          - The Hague
+          - Den Haag
+
+  - canonical: Spain
+    names:
+      - Spain
+      - España
+    cctld: es
+    cities:
+      - canonical: Madrid
+        aliases:
+          - Madrid
+
+  - canonical: Italy
+    names:
+      - Italy
+      - Italia
+    cctld: it
+    cities:
+      - canonical: Milan
+        aliases:
+          - Milan
+          - Milano
+
+  - canonical: United States
+    names:
+      - United States
+      - United States of America
+      - USA
+      - US
+    cities: []

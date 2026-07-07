@@ -26,11 +26,34 @@ pip install -r requirements.txt
 ## Run the app
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
+
+This opens the "X-ray LinkedIn Sourcing Tool" UI: paste a Job
+Description, optionally add a location override, click **Generate
+X-ray Queries**, then review the editable structured analysis and pick
+a search type (Strict / Balanced / Broad / Hidden Titles) before
+copying the Boolean query or opening it directly in Google Search.
+
+No production job-family packs exist yet (see CLAUDE.md), so every
+generated result currently includes an "unsupported job family"
+warning — this is expected until real packs are added under
+`knowledge/job_families/`.
 
 ## Run tests
 
 ```bash
-pytest
+python -m pytest
+```
+
+To run only the UI smoke tests:
+
+```bash
+python -m pytest tests/test_app_smoke.py
+```
+
+## Check for syntax errors across the whole repo
+
+```bash
+python -m compileall .
 ```

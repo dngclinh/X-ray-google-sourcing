@@ -1,0 +1,97 @@
+# ILLUSTRATIVE SCHEMA EXAMPLE ONLY — NOT A REAL JOB-FAMILY PACK.
+#
+# This file documents every field a job-family knowledge pack under
+# knowledge/job_families/ may define (src/xray/knowledge_loader.py).
+# Every id, title, skill, and industry term below is a placeholder, not
+# a genuine profession term (CLAUDE.md section 4 category 2 forbids
+# real profession-specific terms outside a real pack). The loader does
+# not auto-discover files in this directory — job-family detection is a
+# separate, not-yet-implemented concern — so this file is never picked
+# up as production data by the running app.
+#
+# To add a real job family, copy this structure into a new
+# `knowledge/job_families/<family>.yaml` file with real terms. Do not
+# rename or repurpose this file for that.
+
+family: "Example Role Family"
+
+family_signals:
+  - "example role family"
+  - "example practitioner"
+
+# Title groups are grouped by seniority ("seniority") or by role type
+# ("role_type") — never both in the same group.
+titles:
+  - id: "junior"
+    group_type: "seniority"
+    terms:
+      - "Junior Example Practitioner"
+      - "Associate Example Practitioner"
+    weight: 0.3
+  - id: "senior"
+    group_type: "seniority"
+    terms:
+      - "Senior Example Practitioner"
+      - "Lead Example Practitioner"
+    weight: 0.7
+  - id: "core_role_type"
+    group_type: "role_type"
+    terms:
+      - "Example Practitioner"
+      - "Example Specialist"
+
+specializations:
+  - id: "example_specialization_a"
+    name: "Example Specialization A"
+    terms:
+      - "Example Specialization A Practitioner"
+    weight: 0.6
+  - id: "example_specialization_b"
+    name: "Example Specialization B"
+    terms:
+      - "Example Specialization B Practitioner"
+
+# specialization_signals maps a specialization's id (defined above) to
+# the JD signal phrases that suggest that specialization applies.
+specialization_signals:
+  example_specialization_a:
+    - "example specialization a systems"
+    - "example specialization a platform"
+  example_specialization_b:
+    - "example specialization b tooling"
+
+industries:
+  - id: "example_industry"
+    name: "Example Industry"
+    terms:
+      - "example industry"
+      - "example sector"
+    weight: 0.4
+
+skill_groups:
+  - id: "example_core_skill"
+    name: "Example Core Skill"
+    terms:
+      - "Example Skill A"
+      - "Example Skill A Framework"
+    weight: 0.8
+  - id: "example_secondary_skill"
+    name: "Example Secondary Skill"
+    terms:
+      - "Example Skill B"
+
+# Adjacent/feeder titles for the Hidden Titles variant (CLAUDE.md
+# section 6) — titles that don't literally match the target role.
+hidden_title_signals:
+  - "Example Adjacent Title"
+  - "Example Feeder Title"
+
+exclusions:
+  - "Example Recruiter"
+
+# local_market_terms is keyed by a locale code (e.g. a real pack would
+# use "de", "pl", etc.); "xx" here is a placeholder, matching the
+# placeholder ccTLD convention already used in the jd-to-xray rules.
+local_market_terms:
+  xx:
+    - "Example Local-Language Title"

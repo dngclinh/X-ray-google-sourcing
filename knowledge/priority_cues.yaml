@@ -1,0 +1,43 @@
+# Generic priority-cue knowledge: the phrase dictionary that signals
+# whether a requirement is MUST / IMPORTANT / NICE-TO-HAVE (CLAUDE.md
+# section 6).
+#
+# Per CLAUDE.md section 7, MUST/IMPORTANT/NICE classification is
+# reliable only when the JD contains one of these explicit cues —
+# absent a matching phrase, classification is a best-effort default,
+# not a guarantee. Per the xray-code-maintenance skill (category 5,
+# "Priority-cue gap"), this dictionary — not Python code in
+# src/xray/extractor.py — is where a missing real-world cue phrase gets
+# added.
+#
+# Each phrase must appear in exactly one category; a phrase implying
+# two different priorities at once is inherently ambiguous and is
+# rejected by the loader.
+priority_cues:
+  must:
+    - required
+    - must have
+    - must-have
+    - mandatory
+    - essential
+    - you must have
+    - minimum requirements
+    - minimum qualifications
+    - non-negotiable
+
+  important:
+    - preferred
+    - strongly preferred
+    - important
+    - ideally
+    - should have
+    - desirable
+
+  nice_to_have:
+    - nice to have
+    - nice-to-have
+    - bonus
+    - a plus
+    - a big plus
+    - optional
+    - would be a plus

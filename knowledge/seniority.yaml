@@ -1,0 +1,62 @@
+# Generic seniority-cue knowledge: canonical seniority levels and their
+# common title-modifier aliases.
+#
+# Per CLAUDE.md section 4, seniority cues are dictionary-driven
+# knowledge, not generic engine logic — they live here, not as a
+# hardcoded list in src/xray/extractor.py. This file is generic
+# (cross-family) knowledge, not profession-specific knowledge: it must
+# not be edited to encode job-family, title, or skill information.
+#
+# Per the jd-to-xray rules, seniority is modeled as its own optional
+# signal (a title modifier), not folded into the title OR group unless
+# the JD's literal title already includes it.
+seniority_levels:
+  - canonical: Intern
+    aliases:
+      - Intern
+      - Internship
+      - Working Student
+
+  - canonical: Junior
+    aliases:
+      - Junior
+      - Entry-Level
+      - Entry Level
+      - Associate
+
+  - canonical: Mid-Level
+    aliases:
+      - Mid-Level
+      - Mid Level
+      - Intermediate
+
+  - canonical: Senior
+    aliases:
+      - Senior
+
+  - canonical: Lead
+    aliases:
+      - Lead
+      - Team Lead
+
+  - canonical: Staff
+    aliases:
+      - Staff
+
+  - canonical: Principal
+    aliases:
+      - Principal
+
+  - canonical: Head
+    aliases:
+      - Head of
+      - Head
+
+  - canonical: Director
+    aliases:
+      - Director
+
+  - canonical: VP
+    aliases:
+      - VP
+      - Vice President
