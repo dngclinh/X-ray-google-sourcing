@@ -135,3 +135,69 @@ def test_electrician_and_electrical_technician_are_not_promoted_to_lead_engineer
     assert spec.job_family is None
     assert "Lead Electrical Engineer" not in spec.titles
     assert not any("Electrical Engineer" in title for title in spec.titles)
+
+
+# ---------------------------------------------------------------------------
+# Positive/negative: "hyperscale"/"colocation" are strong standalone
+# data-center specialization signals; a bare technical skill term
+# (UPS/switchgear) is not — only specialization_signals feed
+# specialization detection, never skill_groups (family_detector.py's
+# `_score_specialization` never reads pack.skill_groups).
+# ---------------------------------------------------------------------------
+
+
+def test_hyperscale_alone_activates_data_center_specialization():
+    jd = "We are hiring an Electrical Engineer for our hyperscale campus expansion."
+    spec, _ = generate_xray_queries(jd)
+
+    assert spec.specialization == "Data Center / Mission Critical"
+    all_skills = spec.skills.must + spec.skills.important + spec.skills.nice_to_have
+    assert "UPS" not in all_skills
+    assert "switchgear" not in all_skills
+
+
+def test_bare_skill_terms_alone_do_not_activate_specialization():
+    jd = "We are hiring an Electrical Engineer. UPS and switchgear design experience required."
+    spec, _ = generate_xray_queries(jd)
+
+    assert spec.specialization is None
+    assert spec.industries == []
+
+
+# ---------------------------------------------------------------------------
+# Positive/negative: new Digital Infrastructure / Engineering Consulting /
+# Industrial Practice industries (Phase 5 additions)
+# ---------------------------------------------------------------------------
+
+
+def test_digital_infrastructure_industry_is_detected():
+    jd = "We are hiring an Electrical Engineer supporting our digital infrastructure team."
+    spec, _ = generate_xray_queries(jd)
+
+    assert "Digital Infrastructure" in spec.industries
+
+
+def test_consulting_firm_does_not_activate_engineering_consulting_industry():
+    jd = "We are hiring an Electrical Engineer to join our consulting firm."
+    spec, _ = generate_xray_queries(jd)
+
+    assert "Engineering Consulting" not in spec.industries
+
+
+# ---------------------------------------------------------------------------
+# Positive/negative: new core_functions capability (Phase 4/5)
+# ---------------------------------------------------------------------------
+
+
+def test_technical_due_diligence_core_function_is_detected():
+    jd = "We are hiring an Electrical Engineer to lead technical due diligence for site assessments."
+    spec, _ = generate_xray_queries(jd)
+
+    assert "Technical Due Diligence" in spec.core_functions
+
+
+def test_generic_due_diligence_does_not_activate_core_function():
+    jd = "We are hiring an Electrical Engineer to support due diligence activities for our projects."
+    spec, _ = generate_xray_queries(jd)
+
+    assert "Technical Due Diligence" not in spec.core_functions

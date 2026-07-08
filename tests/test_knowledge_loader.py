@@ -66,6 +66,9 @@ def _valid_pack_dict() -> dict:
         "skill_groups": [
             {"id": "skill_a", "name": "Skill A", "terms": ["Skill A"], "weight": 0.5},
         ],
+        "core_functions": [
+            {"id": "cf_a", "name": "Core Function A", "terms": ["core function a"]},
+        ],
         "hidden_title_signals": ["Adjacent Title"],
         "exclusions": ["Recruiter"],
         "local_market_terms": {"xx": ["Local Title"]},
@@ -92,6 +95,7 @@ def test_load_schema_example_is_valid():
     )
     assert pack.industries[0].name == "Example Industry"
     assert pack.skill_groups[0].weight == 0.8
+    assert pack.core_functions[0].name == "Example Core Function"
     assert pack.hidden_title_signals == ("Example Adjacent Title", "Example Feeder Title")
     assert pack.exclusions == ("Example Recruiter",)
     assert pack.local_market_terms["xx"] == ("Example Local-Language Title",)
@@ -114,6 +118,7 @@ def test_load_pack_without_optional_sections(tmp_path: Path):
         "specialization_signals",
         "industries",
         "skill_groups",
+        "core_functions",
         "hidden_title_signals",
         "exclusions",
         "local_market_terms",
@@ -126,6 +131,7 @@ def test_load_pack_without_optional_sections(tmp_path: Path):
     assert pack.specialization_signals == {}
     assert pack.industries == ()
     assert pack.skill_groups == ()
+    assert pack.core_functions == ()
     assert pack.hidden_title_signals == ()
     assert pack.exclusions == ()
     assert pack.local_market_terms == {}
@@ -308,6 +314,15 @@ def test_duplicate_id_across_sections_raises(tmp_path: Path):
 def test_duplicate_id_case_insensitive_raises(tmp_path: Path):
     data = _valid_pack_dict()
     data["industries"].append({"id": "Spec_A", "name": "Collides", "terms": ["collides"]})
+    path = _write_yaml(tmp_path / "family.yaml", data)
+    with pytest.raises(KnowledgePackSchemaError, match="duplicate canonical id"):
+        load_job_family_pack(path)
+
+
+def test_duplicate_id_core_functions_against_titles_raises(tmp_path: Path):
+    data = _valid_pack_dict()
+    # "core" is already a title id; reuse it as a core_functions id too.
+    data["core_functions"].append({"id": "core", "name": "Core Function", "terms": ["core function"]})
     path = _write_yaml(tmp_path / "family.yaml", data)
     with pytest.raises(KnowledgePackSchemaError, match="duplicate canonical id"):
         load_job_family_pack(path)

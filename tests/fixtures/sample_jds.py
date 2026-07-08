@@ -107,6 +107,13 @@ Fluent in German and English is expected for daily communication with
 the team.
 """
 
+#: A language introduced by the bare "fluent" cue (no "in") — a common
+#: real-world phrasing ("Fluent German and professional English") this
+#: engine must also recognize, not just the "fluent in" form.
+LANGUAGE_FLUENT_BARE_JD = """
+Fluent German is expected for this role.
+"""
+
 #: Two languages confirmed by adjacent CEFR level codes in one segment.
 LANGUAGE_CEFR_JD = """
 Language skills: German C1, English B2.
@@ -202,4 +209,43 @@ preferred. Kubernetes is a nice to have.
 PACK_TERMS_JD = """
 We are hiring a Backend Engineer with fintech experience. Python is
 required. Kubernetes is a nice to have.
+"""
+
+#: A JD carrying a core-function term ("code review") that only a
+#: matching, activated job-family pack should surface.
+PACK_CORE_FUNCTION_JD = """
+We are hiring a Backend Engineer. Code review is part of the role.
+"""
+
+#: False positive: the location term describes the employer's own HQ,
+#: not a job location, with no other location mentioned anywhere.
+LOCATION_NEGATIVE_HEADQUARTERED_JD = """
+Acme Corp is headquartered in Berlin. We build software products.
+"""
+
+#: False positive: the location term describes the employer's Global
+#: Design Center, not a job location, with no other location mentioned.
+LOCATION_NEGATIVE_GLOBAL_DESIGN_CENTER_JD = """
+Our company has a Global Design Center in Austria.
+"""
+
+#: The same country mentioned twice: once in a negative-context (HQ)
+#: sentence, once in a clean job-location sentence — the canonical term
+#: must still be extracted via the clean occurrence, not permanently
+#: rejected just because one occurrence was employer-HQ context.
+LOCATION_POSITIVE_DESPITE_UNRELATED_HQ_MENTION_JD = """
+Our company is headquartered in Munich. This role is based in Munich.
+"""
+
+#: Two requirement lines with NO bullet markers and no terminal
+#: punctuation — the common real-world shape when a JD is copy-pasted
+#: from a rendered HTML `<li>` list with the bullet glyphs stripped.
+#: Regression fixture for `_split_into_blocks`'s continuation-cue
+#: heuristic: without it, both lines merge into one giant block, and
+#: the "a plus" cue on the second (unrelated) line would incorrectly
+#: bleed its nice-to-have classification onto the first line's "Python"
+#: term too.
+BULLETLESS_LOOSE_LIST_JD = """
+Python experience is required
+Kubernetes experience is a plus
 """

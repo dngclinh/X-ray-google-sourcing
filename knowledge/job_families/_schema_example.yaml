@@ -80,6 +80,17 @@ skill_groups:
     terms:
       - "Example Skill B"
 
+# core_functions is Core Function evidence (CLAUDE.md section 6),
+# distinct from industries — activity/process terms (e.g. "technical
+# due diligence", "electrical planning") rather than domain/vertical
+# terms or technical/skill nouns.
+core_functions:
+  - id: "example_core_function"
+    name: "Example Core Function"
+    terms:
+      - "example core function activity"
+    weight: 0.4
+
 # Adjacent/feeder titles for the Hidden Titles variant (CLAUDE.md
 # section 6) — titles that don't literally match the target role.
 hidden_title_signals:

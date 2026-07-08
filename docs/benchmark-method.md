@@ -93,10 +93,12 @@ states, 0.5 if only one of the two is represented, 0.0 if neither is
 or if the engine asserts a dimension Claude's JD-grounded profile does
 not support (a false positive is scored identically to a miss — CLAUDE.md
 section 7 treats an invented classification as worse than an honest
-gap). Because `SearchSpec.core_functions` is not yet populated by
-extraction in this engine version (see "Known limitations" below), this
-category currently scores against Industry evidence only until that gap
-is closed.
+gap). `SearchSpec.core_functions` is now populated by extraction (a
+job-family pack's own `core_functions:` section, matched the same way
+`industries` is — see `knowledge/job_families/electrical_engineering.yaml`),
+so this category scores both dimensions independently; a pack that has
+not yet curated its own `core_functions` vocabulary will still score 0.0
+on that half, same as any other genuine coverage gap.
 
 **3. MUST-skill coverage** — precision and recall over the MUST set,
 combined as F1:
@@ -171,16 +173,19 @@ even if the family average already clears 90%.
 
 ## Current benchmark corpus
 
-`tests/fixtures/electrical_jds.py` defines 13 JDs; the table in that
+`tests/fixtures/electrical_jds.py` defines 14 JDs; the table in that
 module's docstring maps each to the dimensions it covers (short/long,
 English/German, explicit/implicit seniority, all three specializations,
 Germany/Germany+Poland/Poland-only locations, mandatory/optional
 language, company-introduction false positive, two adjacent-but-incorrect
-families). `tests/test_regression_electrical.py` gates every fixture's
-structural properties deterministically; applying this document's
-weighted rubric to the same 13 JDs (comparing engine output against
-`jd-to-xray`-produced benchmark output for each) is how the family's
-90% figure is actually produced. Extending the corpus — for a new
+families, and — the 14th, real-world fixture —
+`REAL_LEAD_ELECTRICAL_ENGINEER_DATA_CENTER_DUE_DILIGENCE_EN_JD`, a real
+job posting with no bullet markers, a company-HQ location false
+positive, and dense core-function/skill evidence). `tests/test_regression_electrical.py`
+gates every fixture's structural properties deterministically; applying
+this document's weighted rubric to the same 14 JDs (comparing engine
+output against `jd-to-xray`-produced benchmark output for each) is how
+the family's 90% figure is actually produced. Extending the corpus — for a new
 specialization, a new locale, or a bug-report JD — should add to
 `tests/fixtures/electrical_jds.py` first (with matching property
 coverage in `tests/test_regression_electrical.py`) and only then be
@@ -229,12 +234,15 @@ State these plainly per CLAUDE.md section 7 — they are why certain
 categories above are scored more leniently, not defects in this
 methodology:
 
-- **`SearchSpec.core_functions` is never populated by extraction** in
-  this engine version. Category 2 is scored against Industry evidence
-  only until this is fixed; the pairwise Strict-narrower-than-Balanced
-  and Balanced-narrower-than-Broad clause-count relationships are not
-  scored as a hard requirement in category 8 for the same reason (see
-  `tests/test_regression_electrical.py`'s comment on this).
+- **The pairwise Strict-narrower-than-Balanced and
+  Balanced-narrower-than-Broad clause-count relationships are still not
+  scored as a hard requirement in category 8.** `SearchSpec.core_functions`
+  is now populated, but `SearchSpec.confidence` (used by `assembler.py`'s
+  `_strongest_evidence_group` to pick Balanced's single evidence clause)
+  is still never populated by extraction, so Balanced's evidence clause
+  can still tie Strict's clause count depending on pack content. Only the
+  universal Strict-≥-Broad relationship is asserted as a hard invariant
+  (see `tests/test_regression_electrical.py`'s comment on this).
 - **MUST/IMPORTANT/NICE-TO-HAVE classification is English-cue-only.**
   `LONG_INDUSTRIAL_POWER_DE_JD` demonstrates this concretely: German
   cue phrases ("zwingend erforderlich", "von Vorteil") are not

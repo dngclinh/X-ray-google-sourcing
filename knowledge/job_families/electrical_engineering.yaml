@@ -95,7 +95,11 @@ specializations:
 # drawn from the explicitly approved relationship set; the other two
 # specializations use equally well-established, standard industry/market
 # terms (e.g. German "TGA" for building services, "Industrieanlagen" for
-# industrial facilities) rather than invented synonyms.
+# industrial facilities) rather than invented synonyms. "hyperscale",
+# "colocation", "Tier III"/"Tier IV" are confirmed strong, standalone
+# data-center facility-class signals — unlike a bare technical skill
+# term (e.g. "UPS", "switchgear"), which never feeds specialization
+# detection on its own (see skill_groups below).
 specialization_signals:
   data_center_mission_critical:
     - "data center"
@@ -110,6 +114,10 @@ specialization_signals:
     - "mission-critical"
     - "critical facilities"
     - "critical facility"
+    - "hyperscale"
+    - "colocation"
+    - "Tier III"
+    - "Tier IV"
   building_services_mep:
     - "building services"
     - "MEP"
@@ -125,9 +133,12 @@ specialization_signals:
     - "Industrieelektrik"
 
 # industries: domain/vertical evidence that feeds the Core Function/
-# Industry evidence clause (CLAUDE.md section 6) — mirrors the three
-# specializations above, since each specialization is also an industry
-# vertical within Electrical Engineering.
+# Industry evidence clause (CLAUDE.md section 6) — the first three
+# mirror the three specializations above, since each specialization is
+# also an industry vertical within Electrical Engineering; the last
+# three (digital_infrastructure_industry, engineering_consulting_industry,
+# industrial_practice_industry) are additional standalone domain
+# vertical/sector evidence not tied to a specific specialization.
 industries:
   - id: "data_center_industry"
     name: "Data Center / Mission Critical"
@@ -144,6 +155,8 @@ industries:
       - "mission-critical"
       - "critical facilities"
       - "critical facility"
+      - "hyperscale"
+      - "colocation"
     weight: 0.3
 
   - id: "building_services_industry"
@@ -165,6 +178,24 @@ industries:
       - "process industry"
       - "Industrieanlagen"
       - "Industrieelektrik"
+    weight: 0.3
+
+  - id: "digital_infrastructure_industry"
+    name: "Digital Infrastructure"
+    terms:
+      - "digital infrastructure"
+    weight: 0.3
+
+  - id: "engineering_consulting_industry"
+    name: "Engineering Consulting"
+    terms:
+      - "engineering consultancy"
+    weight: 0.3
+
+  - id: "industrial_practice_industry"
+    name: "Industrial Practice"
+    terms:
+      - "industrial practice"
     weight: 0.3
 
 # skill_groups: grouped technical evidence. Each group is scoped to the
@@ -195,6 +226,7 @@ skill_groups:
       - "substations"
       - "Umspannwerk"
       - "Umspannwerke"
+      - "busbar"
     weight: 0.4
 
   - id: "transformers"
@@ -213,7 +245,25 @@ skill_groups:
       - "emergency power"
       - "Notstromversorgung"
       - "Notstrom"
+      - "standby generation"
     weight: 0.4
+
+  - id: "facility_scale_class"
+    name: "Facility Class / Scale"
+    terms:
+      - "hyperscale"
+      - "colocation"
+      - "Tier III"
+      - "Tier IV"
+    weight: 0.4
+
+  - id: "grid_utility_infrastructure"
+    name: "Grid & Utility Infrastructure"
+    terms:
+      - "grid connection"
+      - "utility availability"
+      - "constraints on power delivery"
+    weight: 0.35
 
   # --- Building Services / MEP technical evidence ---
   - id: "building_electrical_systems"
@@ -254,6 +304,60 @@ skill_groups:
       - "variable frequency drives"
       - "VFD"
       - "Frequenzumrichter"
+    weight: 0.3
+
+  # --- Cross-specialization technical/process evidence ---
+  - id: "site_development_process"
+    name: "Site Development Process"
+    terms:
+      - "greenfield"
+      - "brownfield"
+      - "feasibility studies"
+      - "planning and permitting"
+      - "HOAI"
+      - "HOAI phase"
+    weight: 0.3
+
+  - id: "bim_coordination"
+    name: "BIM Coordination"
+    terms:
+      - "BIM"
+      - "BIM coordination"
+      - "Revit MEP"
+      - "Uptime Institute Tier standards"
+    weight: 0.3
+
+# core_functions: activity/process evidence (CLAUDE.md section 6 — Core
+# Function evidence, distinct from Industry evidence). Placement rule:
+# activity/process terms (due diligence, planning, coordination,
+# communication) live here; concrete technical/domain nouns (HV/MV,
+# switchgear, BIM, Tier III, etc.) live in skill_groups above. Every
+# term uses literal, verbatim JD wording it was grounded against, not a
+# paraphrase.
+core_functions:
+  - id: "technical_due_diligence"
+    name: "Technical Due Diligence"
+    terms:
+      - "technical due diligence"
+      - "site due diligence"
+    weight: 0.4
+
+  - id: "electrical_planning"
+    name: "Electrical Planning"
+    terms:
+      - "electrical planning"
+    weight: 0.4
+
+  - id: "multidisciplinary_coordination"
+    name: "Multidisciplinary Coordination"
+    terms:
+      - "multidisciplinary teams"
+    weight: 0.35
+
+  - id: "stakeholder_communication"
+    name: "Stakeholder Communication"
+    terms:
+      - "stakeholder communication"
     weight: 0.3
 
 # hidden_title_signals: adjacent/feeder titles for the Hidden Titles

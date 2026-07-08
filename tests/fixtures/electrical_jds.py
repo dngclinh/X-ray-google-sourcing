@@ -12,6 +12,12 @@ substring of a larger word, and never across an inflected/declined
 word form) so that matches in `tests/test_regression_electrical.py` are
 deterministic, not incidental.
 
+One deliberate exception to "not real job postings":
+`REAL_LEAD_ELECTRICAL_ENGINEER_DATA_CENTER_DUE_DILIGENCE_EN_JD` is a real
+job posting, kept verbatim (including its lack of bullet markers), added
+specifically to regression-lock a real, root-caused gap found by running
+it through the app and comparing against a Claude-authored benchmark.
+
 This module holds JD text only — no expectations, no assertions. Expected
 properties live in `tests/test_regression_electrical.py`, per the same
 fixtures/assertions separation `tests/fixtures/sample_jds.py` already
@@ -37,6 +43,7 @@ fixtures feed the weighted scoring method):
 | AMBIGUOUS_SPECIALIZATION_EN_JD                 | English, tied specialization evidence, Germany                          |
 | UNSUPPORTED_FAMILY_EN_JD                       | English, wholly unrelated family                                        |
 | SINGLE_COUNTRY_POLAND_EN_JD                    | English, Poland only                                                    |
+| REAL_LEAD_ELECTRICAL_ENGINEER_DATA_CENTER_DUE_DILIGENCE_EN_JD | real JD, long, English, no bullets, company-HQ false positive, multi-country, mandatory language, core functions |
 """
 
 from __future__ import annotations
@@ -205,3 +212,76 @@ UNSUPPORTED_FAMILY_EN_JD = (
 SINGLE_COUNTRY_POLAND_EN_JD = (
     "We are hiring an Electrical Engineer for our office in Warsaw, Poland."
 )
+
+#: A real "Lead Electrical Engineer" job posting (data-center due
+#: diligence role, Germany/Poland), kept byte-for-byte as originally
+#: pasted — deliberately NOT reformatted with bullet markers, since the
+#: complete absence of bullets in the Responsibilities/Profile/Offer
+#: sections is precisely what exposed the segmentation bug this fixture
+#: regression-locks (see `src/xray/extractor.py`'s
+#: `_ends_with_continuation_cue`/`_split_into_blocks`). Also exercises:
+#: a company-HQ location false positive ("headquartered in Berlin,
+#: Germany" — Berlin must be excluded, Germany/Poland must survive via
+#: their other clean occurrences), a two-country location set (global
+#: `site:` source fallback), an implicit MUST-tier-shaped language
+#: requirement ("Fluent German and professional English"), a
+#: NICE-TO-HAVE language cleanly isolated by a semicolon even before the
+#: segmentation fix ("Polish a plus"), rich Data Center / Mission
+#: Critical specialization and core-function evidence, and zero MUST-cue
+#: phrases anywhere in the text (`spec.skills.must` is correctly empty —
+#: an honest CLAUDE.md section 7 limitation, not a defect).
+REAL_LEAD_ELECTRICAL_ENGINEER_DATA_CENTER_DUE_DILIGENCE_EN_JD = """
+Lead Electrical Engineer (m/f/d)
+Electrical Planning – Data Centre Due Diligence – Hyperscale & Colocation
+Remote / Hybrid – Germany or Poland
+Full-time – Permanent – Immediate start
+◆ Compensation: €100,000–150,000 p.a., depending on experience and qualifications
+
+gbc engineers is an international structural and civil engineering consultancy headquartered in Berlin, Germany, with offices in Germany and a Global Design Center in Southeast Asia, and a growing presence in Poland. We specialise in planning and design consulting services, covering structural design, BIM modelling and related engineering services. Over the past decade we have completed over 1,000 projects, including more than 20 data centres, and are actively growing our digital infrastructure, new energy and industrial practice. By combining German engineering precision with digital innovation and international collaboration, we deliver sustainable, high-quality solutions for the built environment.
+
+As we expand our Polish operations, we are looking for a Lead Electrical Engineer to anchor our electrical planning capability and lead the ELT workstream on data centre site due diligence and design projects.
+
+YOUR MISSION AT GBC ENGINEERS
+As Lead Electrical Engineer, you own the electrical workstream on hyperscale and colocation data centre projects in Poland and wider Europe. You lead site due diligence on grid connection, HV and MV supply infrastructure and utility feasibility, and you take electrical planning from concept through detailed design. You build the technical core of our ELT practice — anchoring the discipline while civil, mechanical and structural specialists support adjacent scopes through our subcontract network.
+
+YOUR RESPONSIBILITIES
+Conduct electrical site assessments and due diligence for greenfield and brownfield data centre developments in Poland and wider Europe
+Evaluate HV and MV supply infrastructure, grid connection capacity, utility availability and constraints on power delivery
+Lead concept and detailed design of medium and low voltage distribution systems for hyperscale and colocation data centres
+Specify UPS, standby generation, busbar and switchgear systems to Tier III and Tier IV requirements
+Coordinate BIM-based electrical models with structural and mechanical disciplines
+Produce technical due diligence reports for developer and investor audiences with clear, decision-ready recommendations
+Serve as primary technical interface with clients, developers and general contractors
+Manage delivery against HOAI phase milestones (LP 1–6), including approval and permitting coordination
+Manage and quality-assure deliverables produced by subcontract specialists across civil, mechanical and structural disciplines
+Build and develop the electrical planning capability as we scale the Polish practice
+YOUR PROFILE
+Degree in Electrical Engineering or equivalent (Dipl.-Ing. / M.Sc.)
+7+ years in electrical planning for mission-critical, industrial or large-scale infrastructure facilities
+Proven data centre project experience — at least one hyperscale or Tier III/IV facility delivered
+Solid knowledge of German or European HV and MV standards and grid connection processes
+Track record in technical due diligence, feasibility studies or early-stage site development
+Familiarity with planning and permitting processes in Poland; broader European experience a plus
+Experience coordinating multidisciplinary teams and managing external consultants
+BIM coordination experience (Revit MEP) and familiarity with Uptime Institute Tier standards a plus
+Strong stakeholder communication and coordination skills
+Fluent German and professional English; Polish a plus
+WHAT WE OFFER
+Senior ownership of an emerging practice area in Poland and Central Europe
+Direct collaboration with leadership on high-profile hyperscale data centre projects (BER13, FRA31, Penta HAM01)
+Direct access to Engineering Leads and management — founder-led, no corporate hierarchy
+Flexible working — remote or hybrid from Germany or Poland
+Collaboration with international teams on projects in Germany, Southeast Asia and beyond
+Yearly employee exchange programmes with Germany and Southeast Asia
+Exposure to landmark projects including data centres, industrial facilities and infrastructure
+OUR VISION AT GBC ENGINEERS
+We are founder-led, with over 200 employees in Germany and Southeast Asia. Buildability first is our standard: pragmatic solutions that optimise budget and timeline without compromising quality. Those who take on responsibility here move forward quickly. Visibility is guaranteed - as is the opportunity to learn fast.
+
+Sounds Like You?
+
+Please send your CV and a short motivation letter to bewerbung@gbc-engineers.de with the subject line:
+
+Application - Lead Electrical Engineer
+
+Please include your university transcript (Grade Overview / Transcript of Records) with your application.
+"""

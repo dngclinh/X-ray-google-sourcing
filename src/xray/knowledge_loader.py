@@ -5,9 +5,9 @@ Loads and validates a single job-family knowledge pack YAML file
 
 Per CLAUDE.md section 4 (category 2, dictionary-driven knowledge), a
 job-family pack is where every profession-specific term (titles,
-specializations, industries, skills, hidden-title signals, exclusions,
-local-market terms) belongs. This module only parses and validates that
-structure. It deliberately does not:
+specializations, industries, skills, core functions, hidden-title
+signals, exclusions, local-market terms) belongs. This module only
+parses and validates that structure. It deliberately does not:
 
 - decide *which* pack applies to a given Job Description — job-family
   detection is a separate, not-yet-implemented concern;
@@ -35,6 +35,7 @@ _ALLOWED_TOP_LEVEL_FIELDS = frozenset(
         "specialization_signals",
         "industries",
         "skill_groups",
+        "core_functions",
         "hidden_title_signals",
         "exclusions",
         "local_market_terms",
@@ -55,6 +56,7 @@ _TITLE_GROUP_FIELDS = frozenset({"id", "group_type", "terms", "weight"})
 _SPECIALIZATION_FIELDS = frozenset({"id", "name", "terms", "weight"})
 _INDUSTRY_FIELDS = frozenset({"id", "name", "terms", "weight"})
 _SKILL_GROUP_FIELDS = frozenset({"id", "name", "terms", "weight"})
+_CORE_FUNCTION_FIELDS = frozenset({"id", "name", "terms", "weight"})
 
 
 class KnowledgePackSchemaError(ValueError):
@@ -96,6 +98,17 @@ class SkillGroup:
 
 
 @dataclass(frozen=True)
+class CoreFunction:
+    """One core-function/activity evidence group (CLAUDE.md section 6:
+    Core Function evidence, distinct from Industry evidence)."""
+
+    id: str
+    name: str
+    terms: tuple[str, ...]
+    weight: float | None = None
+
+
+@dataclass(frozen=True)
 class JobFamilyPack:
     """Typed, validated contents of one job-family knowledge pack file."""
 
@@ -107,6 +120,7 @@ class JobFamilyPack:
     specialization_signals: dict[str, tuple[str, ...]]
     industries: tuple[Industry, ...]
     skill_groups: tuple[SkillGroup, ...]
+    core_functions: tuple[CoreFunction, ...]
     hidden_title_signals: tuple[str, ...]
     exclusions: tuple[str, ...]
     local_market_terms: dict[str, tuple[str, ...]]
@@ -227,6 +241,19 @@ def _parse_skill_group(raw: Any, index: int) -> SkillGroup:
     return SkillGroup(id=entry_id, name=name, terms=tuple(terms), weight=weight)
 
 
+def _parse_core_function(raw: Any, index: int) -> CoreFunction:
+    context = f"core_functions[{index}]"
+    if not isinstance(raw, dict):
+        raise KnowledgePackSchemaError(f"{context}: must be a mapping, got {raw!r}")
+    _reject_unknown_keys(raw, _CORE_FUNCTION_FIELDS, context)
+    entry_id = _require_str(raw.get("id"), "id", context)
+    context = f"core_functions[{index}] (id={entry_id!r})"
+    name = _require_str(raw.get("name"), "name", context)
+    terms = _require_str_list(raw.get("terms"), "terms", context)
+    weight = _parse_weight(raw, context)
+    return CoreFunction(id=entry_id, name=name, terms=tuple(terms), weight=weight)
+
+
 def _parse_specialization_signals(
     raw: Any, valid_ids: set[str], context: str
 ) -> dict[str, tuple[str, ...]]:
@@ -266,14 +293,16 @@ def _check_no_duplicate_ids(
     specializations: tuple[Specialization, ...],
     industries: tuple[Industry, ...],
     skill_groups: tuple[SkillGroup, ...],
+    core_functions: tuple[CoreFunction, ...],
     context: str,
 ) -> None:
     """Reject duplicate canonical ids across all id-bearing sections.
 
     Ids share a single namespace across titles/specializations/
-    industries/skill_groups (case-insensitive, Unicode-safe) so that a
-    later cross-reference (e.g. specialization_signals) can never
-    silently resolve to the wrong entry.
+    industries/skill_groups/core_functions (case-insensitive,
+    Unicode-safe) so that a later cross-reference (e.g.
+    specialization_signals) can never silently resolve to the wrong
+    entry.
     """
     seen: dict[str, tuple[str, str]] = {}
     for label, entries in (
@@ -281,6 +310,7 @@ def _check_no_duplicate_ids(
         ("specializations", specializations),
         ("industries", industries),
         ("skill_groups", skill_groups),
+        ("core_functions", core_functions),
     ):
         for entry in entries:
             key = casefold_key(entry.id)
@@ -337,7 +367,14 @@ def _parse_pack(path: Path) -> JobFamilyPack:
         raise KnowledgePackSchemaError(f"{context}: 'skill_groups' must be a list")
     skill_groups = tuple(_parse_skill_group(entry, i) for i, entry in enumerate(skill_groups_raw))
 
-    _check_no_duplicate_ids(titles, specializations, industries, skill_groups, context)
+    core_functions_raw = raw.get("core_functions", [])
+    if not isinstance(core_functions_raw, list):
+        raise KnowledgePackSchemaError(f"{context}: 'core_functions' must be a list")
+    core_functions = tuple(
+        _parse_core_function(entry, i) for i, entry in enumerate(core_functions_raw)
+    )
+
+    _check_no_duplicate_ids(titles, specializations, industries, skill_groups, core_functions, context)
 
     specialization_ids = {s.id for s in specializations}
     specialization_signals = (
@@ -369,6 +406,7 @@ def _parse_pack(path: Path) -> JobFamilyPack:
         specialization_signals=specialization_signals,
         industries=industries,
         skill_groups=skill_groups,
+        core_functions=core_functions,
         hidden_title_signals=hidden_title_signals,
         exclusions=exclusions,
         local_market_terms=local_market_terms,

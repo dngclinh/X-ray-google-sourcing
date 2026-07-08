@@ -15,9 +15,10 @@ import pytest
 
 from src.xray.extractor import extract
 from src.xray.glossary import DEFAULT_KNOWLEDGE_DIR, Glossary
-from src.xray.knowledge_loader import Industry, JobFamilyPack, SkillGroup, TitleGroup
+from src.xray.knowledge_loader import CoreFunction, Industry, JobFamilyPack, SkillGroup, TitleGroup
 from src.xray.models import PrioritizedTerms
 from tests.fixtures.sample_jds import (
+    BULLETLESS_LOOSE_LIST_JD,
     COMPANY_TYPE_NEGATIVE_OUR_CONSULTANCY_JD,
     COMPANY_TYPE_NEGATIVE_WE_ARE_EPC_JD,
     COMPANY_TYPE_POSITIVE_BACKGROUND_JD,
@@ -28,6 +29,7 @@ from tests.fixtures.sample_jds import (
     LANGUAGE_FALSE_POSITIVE_NATIVE_CLOUD_JD,
     LANGUAGE_FALSE_POSITIVE_SPEAKING_CONFERENCE_JD,
     LANGUAGE_FALSE_POSITIVE_VERSION_JD,
+    LANGUAGE_FLUENT_BARE_JD,
     LANGUAGE_FLUENT_MULTI_JD,
     LANGUAGE_MUST_JD,
     LANGUAGE_NICE_JD,
@@ -35,6 +37,10 @@ from tests.fixtures.sample_jds import (
     LANGUAGE_PREFERRED_JD,
     LANGUAGE_SPEAKING_JD,
     LOCATION_JD,
+    LOCATION_NEGATIVE_GLOBAL_DESIGN_CENTER_JD,
+    LOCATION_NEGATIVE_HEADQUARTERED_JD,
+    LOCATION_POSITIVE_DESPITE_UNRELATED_HQ_MENTION_JD,
+    PACK_CORE_FUNCTION_JD,
     PACK_TERMS_JD,
     PRIORITY_CUES_JD,
     SENIORITY_JD,
@@ -71,6 +77,9 @@ def _software_engineer_pack() -> JobFamilyPack:
                 terms=("Python", "Kubernetes"),
                 weight=0.3,
             ),
+        ),
+        core_functions=(
+            CoreFunction(id="code_review", name="Code Review", terms=("code review",), weight=0.4),
         ),
         hidden_title_signals=(),
         exclusions=(),
@@ -113,6 +122,21 @@ def test_extract_location_city_and_country(glossary: Glossary):
     assert spec.locations == ["Munich", "Poland"]
 
 
+def test_location_not_extracted_when_describing_employer_hq(glossary: Glossary):
+    spec = extract(LOCATION_NEGATIVE_HEADQUARTERED_JD, glossary)
+    assert spec.locations == []
+
+
+def test_location_not_extracted_when_describing_global_design_center(glossary: Glossary):
+    spec = extract(LOCATION_NEGATIVE_GLOBAL_DESIGN_CENTER_JD, glossary)
+    assert spec.locations == []
+
+
+def test_location_extracted_despite_unrelated_hq_mention_elsewhere(glossary: Glossary):
+    spec = extract(LOCATION_POSITIVE_DESPITE_UNRELATED_HQ_MENTION_JD, glossary)
+    assert spec.locations == ["Munich"]
+
+
 # ---------------------------------------------------------------------------
 # Language requirements — positive cases (rule 2) + multi-language
 # ---------------------------------------------------------------------------
@@ -123,6 +147,11 @@ def test_extract_multiple_languages_from_fluency_cue(glossary: Glossary):
     assert set(spec.languages.important) == {"German", "English"}
     assert spec.languages.must == []
     assert spec.languages.nice_to_have == []
+
+
+def test_extract_language_from_bare_fluent_cue(glossary: Glossary):
+    spec = extract(LANGUAGE_FLUENT_BARE_JD, glossary)
+    assert spec.languages.important == ["German"]
 
 
 def test_extract_languages_from_cefr_codes(glossary: Glossary):
@@ -219,6 +248,17 @@ def test_company_type_not_extracted_when_describing_employer_we_are(glossary: Gl
 
 
 # ---------------------------------------------------------------------------
+# Bullet-less loose-list segmentation
+# ---------------------------------------------------------------------------
+
+
+def test_bulletless_loose_list_lines_segment_independently(glossary: Glossary):
+    spec = extract(BULLETLESS_LOOSE_LIST_JD, glossary, pack=_software_engineer_pack())
+    assert spec.skills.must == ["Python"]
+    assert spec.skills.nice_to_have == ["Kubernetes"]
+
+
+# ---------------------------------------------------------------------------
 # Explicit priority cues (MUST / IMPORTANT / NICE-TO-HAVE)
 # ---------------------------------------------------------------------------
 
@@ -239,7 +279,13 @@ def test_pack_terms_not_extracted_without_activated_pack(glossary: Glossary):
     spec = extract(PACK_TERMS_JD, glossary, pack=None)
     assert spec.skills == PrioritizedTerms()
     assert spec.industries == []
+    assert spec.core_functions == []
     assert spec.job_family is None
+
+
+def test_pack_core_functions_extracted_with_activated_pack(glossary: Glossary):
+    spec = extract(PACK_CORE_FUNCTION_JD, glossary, pack=_software_engineer_pack())
+    assert spec.core_functions == ["Code Review"]
 
 
 def test_pack_titles_industries_and_skills_extracted_with_activated_pack(glossary: Glossary):

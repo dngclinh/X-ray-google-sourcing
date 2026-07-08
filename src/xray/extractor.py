@@ -71,6 +71,7 @@ _CEFR_LEVEL_RE = re.compile(r"(?i)\b[ABC][12]\b")
 #: Fixed set of English phrases that structurally assert language
 #: proficiency, regardless of which language follows them.
 _LANGUAGE_PROFICIENCY_CUES = (
+    "fluent",
     "fluent in",
     "fluency in",
     "proficient in",
@@ -99,6 +100,38 @@ _COMPANY_TYPE_NEGATIVE_CONTEXT_WINDOW = 40
 #: Merge precedence when the same term is matched more than once with
 #: different priority buckets (e.g. in two different sentences).
 _PRIORITY_RANK = {"must": 3, "important": 2, "nice_to_have": 1}
+
+#: A line ending in one of these words cannot grammatically stand as a
+#: complete clause on its own (article / preposition / coordinating
+#: conjunction / relative pronoun / copula-auxiliary / possessive) — a
+#: closed, purely structural signal (same "generic sentence-structure
+#: vocabulary" justification as `_LANGUAGE_PROFICIENCY_CUES` above) that
+#: the line was cut mid-sentence by fixed-width line wrapping, not that
+#: it is a complete, standalone "loose list" item lacking a bullet
+#: marker (common when a JD is copy-pasted from a rendered HTML `<li>`
+#: list with the bullet glyphs stripped out).
+_CONTINUATION_TRAILING_WORDS = frozenset(
+    {
+        "a", "an", "the",
+        "and", "or", "but", "nor",
+        "to", "of", "in", "on", "at", "by", "for", "with", "from", "into", "onto", "as",
+        "is", "are", "was", "were", "be", "being", "been",
+        "that", "which", "who", "whom", "whose",
+        "our", "your", "their", "its", "his", "her",
+    }
+)
+_TRAILING_WORD_RE = re.compile(r"([A-Za-z]+)[.,;:!?)/\-]*$")
+
+
+def _ends_with_continuation_cue(line: str) -> bool:
+    """True if `line` grammatically reads as cut off mid-clause.
+
+    Used only to decide whether the *next* line is a wrapped
+    continuation of `line` (keep merging) or a new, bullet-less "loose
+    list" item (start a new block) — see `_split_into_blocks`.
+    """
+    match = _TRAILING_WORD_RE.search(line.strip())
+    return bool(match) and match.group(1).casefold() in _CONTINUATION_TRAILING_WORDS
 
 
 def _find_phrase(text: str, phrase: str) -> re.Match[str] | None:
@@ -130,12 +163,18 @@ def _to_prioritized_terms(bucket_by_term: dict[str, str]) -> PrioritizedTerms:
 def _split_into_blocks(jd_text: str) -> list[str]:
     """Group raw lines into paragraph/bullet-item blocks.
 
-    A blank line or a new bullet marker starts a new block; any other
-    line is a soft wrap continuing the current block (common when JD
-    text is copy-pasted with fixed line widths) and is joined onto it
-    with a space rather than treated as its own unit — otherwise a
-    single sentence wrapped across two lines would be incorrectly cut
-    in half before sentence-level matching ever runs.
+    A blank line or a new bullet marker always starts a new block. A
+    plain (non-bulleted) line starts a new block too, UNLESS the
+    previous line in the current block ends with a continuation cue
+    (`_ends_with_continuation_cue`) — i.e. it grammatically reads as cut
+    off mid-clause, meaning it's a genuine soft wrap from a fixed-width
+    paste, not a complete "loose list" item that merely lacks a bullet
+    marker (common when a JD is copy-pasted from a rendered HTML `<li>`
+    list with the bullet glyphs stripped). Without this check, a whole
+    section of one-requirement-per-line text with no bullets would
+    collapse into a single giant block, letting an unrelated priority
+    cue in one requirement (e.g. "...a plus") bleed its classification
+    onto every other requirement merged into the same block.
     """
     blocks: list[str] = []
     current: list[str] = []
@@ -152,8 +191,10 @@ def _split_into_blocks(jd_text: str) -> list[str]:
         if _BULLET_PREFIX_RE.match(raw_line):
             flush()
             current.append(_BULLET_PREFIX_RE.sub("", raw_line).strip())
-        else:
-            current.append(raw_line.strip())
+            continue
+        if current and not _ends_with_continuation_cue(current[-1]):
+            flush()
+        current.append(raw_line.strip())
     flush()
     return blocks
 
@@ -254,18 +295,62 @@ def _extract_seniority(full_text: str, glossary: Glossary) -> tuple[list[str], l
 # Location terms
 # ---------------------------------------------------------------------------
 
+#: Phrases indicating a location mention describes the EMPLOYER's own
+#: office network/HQ ("headquartered in Berlin", "with offices in
+#: Germany"), not a job location — generic, structural JD boilerplate
+#: (not electrical- or any other profession-specific), mirroring
+#: `_COMPANY_TYPE_NEGATIVE_CONTEXT_RE`'s employer-self-reference guard.
+#: Deliberately restricted to the PLURAL "offices" only — a singular
+#: "based in our office in <city>" is a common, genuine job-location
+#: phrasing and must not be rejected.
+_LOCATION_NEGATIVE_CONTEXT_RE = re.compile(
+    r"(?i)\b(?:headquartered\s+in|"
+    r"(?:our|with)\s+offices\s+in|"
+    r"company\s+based\s+in|"
+    r"global\s+design\s+cent(?:er|re)\s+in)\b"
+)
+#: How many characters immediately before a matched location term are
+#: inspected for employer-self-reference context.
+_LOCATION_NEGATIVE_CONTEXT_WINDOW = 40
 
-def _extract_locations(full_text: str, glossary: Glossary) -> tuple[list[str], list[str]]:
+
+def _extract_locations(segments: list[str], glossary: Glossary) -> tuple[list[str], list[str]]:
+    """Extract location terms, rejecting employer-HQ mentions.
+
+    A matched location term (e.g. "Berlin") is rejected at the specific
+    occurrence where the text immediately before it describes the
+    employer's own office network/HQ ("headquartered in Berlin",
+    "with offices in Germany") rather than a job location. Unlike
+    `_extract_company_types`, no positive-context confirmation is
+    required — a bare location line (e.g. "Remote / Hybrid – Germany or
+    Poland") has no candidate-background-style cue to require, so
+    demanding one would cause false rejections. Rejection is per-match:
+    a term with any other, clean occurrence elsewhere in the JD is still
+    kept (mirrors `_extract_company_types`'s per-match design).
+    """
     canonical_matches: list[str] = []
     literal_matches: list[str] = []
-    for location in glossary.locations:
-        for city in location.cities:
-            for alias in city.aliases:
-                if contains_phrase(full_text, alias):
+    for segment in segments:
+        for location in glossary.locations:
+            for city in location.cities:
+                for alias in city.aliases:
+                    match = _find_phrase(segment, alias)
+                    if not match:
+                        continue
+                    window_start = max(0, match.start() - _LOCATION_NEGATIVE_CONTEXT_WINDOW)
+                    window = segment[window_start : match.start()]
+                    if _LOCATION_NEGATIVE_CONTEXT_RE.search(window):
+                        continue
                     canonical_matches.append(city.canonical)
                     literal_matches.append(alias)
-        for name in location.names:
-            if contains_phrase(full_text, name):
+            for name in location.names:
+                match = _find_phrase(segment, name)
+                if not match:
+                    continue
+                window_start = max(0, match.start() - _LOCATION_NEGATIVE_CONTEXT_WINDOW)
+                window = segment[window_start : match.start()]
+                if _LOCATION_NEGATIVE_CONTEXT_RE.search(window):
+                    continue
                 canonical_matches.append(location.canonical)
                 literal_matches.append(name)
     return dedupe_preserve_order(canonical_matches), dedupe_preserve_order(literal_matches)
@@ -372,7 +457,7 @@ def _extract_company_types(
 
 def _extract_pack_terms(
     segments: list[str], full_text: str, pack: JobFamilyPack, glossary: Glossary
-) -> tuple[list[str], PrioritizedTerms, list[str], dict[str, list[str]]]:
+) -> tuple[list[str], PrioritizedTerms, list[str], list[str], dict[str, list[str]]]:
     titles: list[str] = []
     for title_group in pack.titles:
         for term in title_group.terms:
@@ -386,6 +471,14 @@ def _extract_pack_terms(
             if contains_phrase(full_text, term):
                 industries.append(industry.name)
                 industry_literal.append(term)
+
+    core_functions: list[str] = []
+    core_function_literal: list[str] = []
+    for core_function in pack.core_functions:
+        for term in core_function.terms:
+            if contains_phrase(full_text, term):
+                core_functions.append(core_function.name)
+                core_function_literal.append(term)
 
     skill_bucket_by_term: dict[str, str] = {}
     skill_literal: list[str] = []
@@ -405,6 +498,8 @@ def _extract_pack_terms(
         matched_signals["pack_titles"] = dedupe_preserve_order(titles)
     if industry_literal:
         matched_signals["industries"] = dedupe_preserve_order(industry_literal)
+    if core_function_literal:
+        matched_signals["core_functions"] = dedupe_preserve_order(core_function_literal)
     if skill_literal:
         matched_signals["skills"] = dedupe_preserve_order(skill_literal)
 
@@ -412,6 +507,7 @@ def _extract_pack_terms(
         dedupe_preserve_order(titles),
         _to_prioritized_terms(skill_bucket_by_term),
         dedupe_preserve_order(industries),
+        dedupe_preserve_order(core_functions),
         matched_signals,
     )
 
@@ -443,7 +539,7 @@ def extract(jd_text: str, glossary: Glossary, pack: JobFamilyPack | None = None)
     if seniority_literal:
         spec.matched_signals["seniority_literal"] = seniority_literal
 
-    locations_canonical, locations_literal = _extract_locations(full_text, glossary)
+    locations_canonical, locations_literal = _extract_locations(segments, glossary)
     spec.locations = locations_canonical
     if locations_literal:
         spec.matched_signals["locations"] = locations_literal
@@ -460,12 +556,13 @@ def extract(jd_text: str, glossary: Glossary, pack: JobFamilyPack | None = None)
 
     if pack is not None:
         spec.job_family = pack.family
-        pack_titles, pack_skills, pack_industries, pack_matched_signals = _extract_pack_terms(
-            segments, full_text, pack, glossary
+        pack_titles, pack_skills, pack_industries, pack_core_functions, pack_matched_signals = (
+            _extract_pack_terms(segments, full_text, pack, glossary)
         )
         spec.titles = dedupe_preserve_order([*spec.titles, *pack_titles])
         spec.skills = pack_skills
         spec.industries = pack_industries
+        spec.core_functions = pack_core_functions
         spec.matched_signals.update(pack_matched_signals)
 
     return spec

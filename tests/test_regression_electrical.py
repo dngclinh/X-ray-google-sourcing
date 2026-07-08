@@ -38,18 +38,22 @@ from tests.fixtures.electrical_jds import (
     MANDATORY_LANGUAGE_EN_JD,
     MULTI_COUNTRY_GERMANY_POLAND_EN_JD,
     OPTIONAL_LANGUAGE_EN_JD,
+    REAL_LEAD_ELECTRICAL_ENGINEER_DATA_CENTER_DUE_DILIGENCE_EN_JD,
     SHORT_EXPLICIT_SENIORITY_BUILDING_SERVICES_DE_JD,
     SHORT_EXPLICIT_SENIORITY_EN_JD,
     SINGLE_COUNTRY_POLAND_EN_JD,
     UNSUPPORTED_FAMILY_EN_JD,
 )
 
-#: The three industry names the pack defines, for concise
-#: "no industry evidence at all" assertions (`forbidden_industries`).
+#: The six industry names the pack defines, for concise "no industry
+#: evidence at all" assertions (`forbidden_industries`).
 _ALL_INDUSTRY_NAMES = (
     "Data Center / Mission Critical",
     "Building Services / MEP",
     "Industrial Power",
+    "Digital Infrastructure",
+    "Engineering Consulting",
+    "Industrial Practice",
 )
 
 #: The pack's every seniority-tier + base title term, for concise
@@ -104,6 +108,11 @@ class ExpectedProperties:
     forbidden_skill_terms: tuple[str, ...] = ()
 
     required_locations: tuple[str, ...] = ()
+    forbidden_locations: tuple[str, ...] = ()
+
+    #: `SearchSpec.core_functions` is a flat list (not tiered).
+    required_core_functions: tuple[str, ...] = ()
+    forbidden_core_functions: tuple[str, ...] = ()
 
     #: tier -> terms, tier in {"must", "important", "nice_to_have"}.
     required_languages: dict[str, tuple[str, ...]] = field(default_factory=dict)
@@ -253,6 +262,13 @@ BENCHMARK_CASES: list[tuple[str, str, ExpectedProperties]] = [
             family="Electrical Engineering",
             specialization=None,
             required_titles=("Electrical Engineer",),
+            # New (Phase 5): the JD's own "German engineering
+            # consultancy" phrase legitimately contains "engineering
+            # consultancy" — a real, correct Engineering Consulting
+            # industry match, unrelated to the company-intro
+            # language/company-type false positives this fixture exists
+            # to test.
+            required_industries=("Engineering Consulting",),
             required_locations=("Munich",),
             forbidden_language_terms=("German",),
             forbidden_company_types=("Consultancy",),
@@ -318,6 +334,70 @@ BENCHMARK_CASES: list[tuple[str, str, ExpectedProperties]] = [
             source_prefix="site:pl.linkedin.com/in/",
         ),
     ),
+    (
+        "real_lead_electrical_engineer_data_center_due_diligence_en",
+        REAL_LEAD_ELECTRICAL_ENGINEER_DATA_CENTER_DUE_DILIGENCE_EN_JD,
+        ExpectedProperties(
+            family="Electrical Engineering",
+            specialization="Data Center / Mission Critical",
+            required_titles=("Lead Electrical Engineer", "Electrical Engineer"),
+            # Out-of-scope guard: Claude's benchmark infers these as
+            # "equivalent" titles for this JD, but neither appears
+            # literally in the JD text — the engine must never invent
+            # title relationships the JD doesn't literally support.
+            forbidden_titles=("Senior Electrical Engineer", "Electrical Design Lead"),
+            required_industries=(
+                "Data Center / Mission Critical",
+                "Digital Infrastructure",
+                "Engineering Consulting",
+                "Industrial Practice",
+            ),
+            # "Building Services / MEP" is NOT forbidden here: the
+            # required skill "Revit MEP" (a BIM software name) contains
+            # "MEP" as a substring-safe whole word, which is also the
+            # pack's existing Building Services specialization signal —
+            # an accepted, minor precision trade-off (removing bare
+            # "MEP" would break the already-approved
+            # AMBIGUOUS_SPECIALIZATION_EN_JD fixture, which relies on it
+            # as one of its two tied specialization signals).
+            forbidden_industries=("Industrial Power",),
+            required_locations=("Germany", "Poland"),
+            forbidden_locations=("Berlin",),
+            # Two distinct countries -> global fallback.
+            source_prefix="site:linkedin.com/in/",
+            # spec.core_functions holds the CoreFunction's name (like
+            # spec.industries holds Industry.name), not the literal
+            # matched term.
+            required_core_functions=(
+                "Technical Due Diligence",
+                "Electrical Planning",
+                "Multidisciplinary Coordination",
+                "Stakeholder Communication",
+            ),
+            required_skills={
+                "important": (
+                    "HV", "MV", "grid connection",
+                    "UPS", "standby generation", "busbar", "switchgear",
+                    "hyperscale", "colocation", "Tier III", "Tier IV",
+                    "greenfield", "brownfield",
+                    "BIM", "feasibility studies",
+                    "utility availability", "constraints on power delivery",
+                    "planning and permitting",
+                ),
+                "nice_to_have": (
+                    "BIM coordination", "Revit MEP", "Uptime Institute Tier standards",
+                ),
+            },
+            required_languages={
+                "important": ("German", "English"),
+                "nice_to_have": ("Polish",),
+            },
+            # Correctly rejected today already (employer self-description,
+            # no candidate-background context) — asserted as a baseline
+            # sanity check, not a fix target of this benchmark case.
+            forbidden_company_types=("Consultancy",),
+        ),
+    ),
 ]
 
 assert len(BENCHMARK_CASES) >= 12, "benchmark corpus must cover at least 12 representative JDs"
@@ -380,6 +460,15 @@ def test_electrical_engineering_benchmark(name: str, jd_text: str, expected: Exp
 
     for term in expected.required_locations:
         assert term in spec.locations, f"{name}: expected location {term!r} missing from {spec.locations!r}"
+    for term in expected.forbidden_locations:
+        assert term not in spec.locations, f"{name}: forbidden location {term!r} present in {spec.locations!r}"
+
+    for term in expected.required_core_functions:
+        assert term in spec.core_functions, (
+            f"{name}: expected core function {term!r} missing from {spec.core_functions!r}"
+        )
+    for term in expected.forbidden_core_functions:
+        assert term not in spec.core_functions, f"{name}: forbidden core function {term!r} present"
 
     for tier, terms in expected.required_languages.items():
         bucket = getattr(spec.languages, tier)
@@ -438,12 +527,15 @@ def test_electrical_engineering_benchmark(name: str, jd_text: str, expected: Exp
     # lacks, while Strict can only add more (MUST skills, MUST-tier
     # language/company-type). A pairwise Strict-strictly-narrower-than-
     # Balanced (or Balanced-than-Broad) clause-count check is deliberately
-    # *not* asserted here: `SearchSpec.core_functions` is never populated
-    # by extraction in this engine version (a pre-existing gap, not
-    # something this pack or task may fix — see docs/benchmark-method.md),
-    # so Balanced's "strongest evidence" clause frequently ties Strict's,
-    # making that specific pairwise check unreliable regardless of pack
-    # content.
+    # *not* asserted here: `SearchSpec.core_functions` IS now populated by
+    # extraction, but `SearchSpec.confidence` (which
+    # `assembler._strongest_evidence_group` uses to pick Balanced's single
+    # evidence clause between core-function and industry evidence) is
+    # still never populated by extraction — so Balanced's evidence clause
+    # can still tie Strict's merged-evidence clause count depending on
+    # pack content, making that specific pairwise check unreliable
+    # regardless of pack content (see docs/benchmark-method.md's "Known
+    # limitations").
     assert _clause_count(variants.strict) >= _clause_count(variants.broad), (
         f"{name}: Strict has fewer clauses than Broad ({variants.strict!r} vs {variants.broad!r})"
     )
@@ -454,3 +546,18 @@ def test_electrical_engineering_benchmark(name: str, jd_text: str, expected: Exp
             assert quoted not in variants.hidden_titles, (
                 f"{name}: Hidden Titles must omit {quoted!r}, got {variants.hidden_titles!r}"
             )
+
+
+def test_real_lead_electrical_engineer_jd_has_no_must_tier_skills():
+    """No MUST-tier priority-cue phrase (`required`/`mandatory`/`essential`/
+    etc., per `knowledge/priority_cues.yaml`) appears anywhere in this real
+    JD's text — every technical term therefore correctly defaults to
+    `important`, and the one segment carrying the literal "a plus" cue
+    correctly lands in `nice_to_have`. This is a genuine, honest limitation
+    (CLAUDE.md section 7: MUST/IMPORTANT/NICE classification is reliable
+    only when the JD contains an explicit cue) to assert as-is, not a
+    defect to work around — a one-off property not worth a generic
+    `ExpectedProperties` field.
+    """
+    spec, _ = generate_xray_queries(REAL_LEAD_ELECTRICAL_ENGINEER_DATA_CENTER_DUE_DILIGENCE_EN_JD)
+    assert spec.skills.must == []
